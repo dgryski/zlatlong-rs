@@ -65,7 +65,7 @@ fn indexByte(haystack: &[u8], needle: u8) -> Option<i64> {
 }
 
 pub fn decompress(value: &[u8]) -> Result<Vec<Point>, InvalidCharError> {
-    // From http://jkebeck.wordpress.com/2013/06/25/retrieving-boundaries-from-the-bing-spatial-data-services-preview/
+    // From https://docs.microsoft.com/en-us/bingmaps/spatial-data-services/geodata-api
 
     let mut points = Vec::<Point>::new();
     let mut index = 0;
