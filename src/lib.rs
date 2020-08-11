@@ -6,6 +6,22 @@ pub struct Point {
 
 const safecharacters: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
 
+const safeIdx: &[u8] = &[
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 63, 255, 255, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 255,
+    255, 255, 255, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+    19, 20, 21, 22, 23, 24, 25, 255, 255, 255, 255, 62, 255, 26, 27, 28, 29, 30, 31, 32, 33, 34,
+    35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+];
+
 pub fn compress(points: &[Point]) -> Vec<u8> {
     // from http://msdn.microsoft.com/en-us/library/jj158958.aspx
     let mut latitude = 0i64;
@@ -54,16 +70,6 @@ pub struct InvalidCharError {
     c: char,
 }
 
-fn indexByte(haystack: &[u8], needle: u8) -> Option<i64> {
-    // TODO(dgryski): optimize this away from a loop
-    for (i, &c) in haystack.iter().enumerate() {
-        if c == needle {
-            return Some(i as i64);
-        }
-    }
-    None
-}
-
 pub fn decompress(value: &[u8]) -> Result<Vec<Point>, InvalidCharError> {
     // From https://docs.microsoft.com/en-us/bingmaps/spatial-data-services/geodata-api
 
@@ -82,13 +88,12 @@ pub fn decompress(value: &[u8]) -> Result<Vec<Point>, InvalidCharError> {
                 return Ok(points);
             }
 
-            let r = indexByte(safecharacters, value[index]);
-            if r.is_none() {
+            let b = safeIdx[value[index] as usize] as i64;
+            if b == 255 {
                 return Err(InvalidCharError {
                     c: value[index] as char,
                 });
             }
-            let b = r.unwrap();
             index += 1;
 
             let tmp = (b & 31) * (1 << k);
@@ -157,6 +162,25 @@ mod tests {
 
         for (i, &p) in points.iter().enumerate() {
             assert!((p.lat - p2[i].lat).abs() < 1e-5 && (p.long - p2[i].long).abs() < 1e-5);
+        }
+    }
+
+    #[test]
+    fn test_safe_idx_inverse() {
+        for (i, &c) in safecharacters.iter().enumerate() {
+            // for all the characters in safecharacters, safeidx of that character is the offset
+            assert!(safeIdx[c as usize] == i as u8)
+        }
+
+        for (c, &i) in safeIdx.iter().enumerate() {
+            if i == 255 {
+                // the character c is not in safecharacters
+                let cc = &(c as u8);
+                assert!(!safecharacters.contains(cc));
+            } else {
+                // the character c has offset i in safecharacters
+                assert!(safecharacters[i as usize] == c as u8)
+            }
         }
     }
 }
