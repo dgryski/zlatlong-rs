@@ -4,9 +4,9 @@ pub struct Point {
     long: f64,
 }
 
-const safecharacters: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
+const SAFE_CHARACTERS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
 
-const safeIdx: &[u8] = &[
+const SAFE_INDEX: &[u8] = &[
     255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 63, 255, 255, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 255,
@@ -58,7 +58,7 @@ pub fn compress(points: &[Point]) -> Vec<u8> {
             }
 
             // step 9
-            result.push(safecharacters[rem as usize])
+            result.push(SAFE_CHARACTERS[rem as usize])
         }
     }
 
@@ -88,7 +88,7 @@ pub fn decompress(value: &[u8]) -> Result<Vec<Point>, InvalidCharError> {
                 return Ok(points);
             }
 
-            let b = safeIdx[value[index] as usize] as i64;
+            let b = SAFE_INDEX[value[index] as usize] as i64;
             if b == 255 {
                 return Err(InvalidCharError {
                     c: value[index] as char,
@@ -167,19 +167,19 @@ mod tests {
 
     #[test]
     fn test_safe_idx_inverse() {
-        for (i, &c) in safecharacters.iter().enumerate() {
+        for (i, &c) in SAFE_CHARACTERS.iter().enumerate() {
             // for all the characters in safecharacters, safeidx of that character is the offset
-            assert!(safeIdx[c as usize] == i as u8)
+            assert!(SAFE_INDEX[c as usize] == i as u8)
         }
 
-        for (c, &i) in safeIdx.iter().enumerate() {
+        for (c, &i) in SAFE_INDEX.iter().enumerate() {
             if i == 255 {
                 // the character c is not in safecharacters
                 let cc = &(c as u8);
-                assert!(!safecharacters.contains(cc));
+                assert!(!SAFE_CHARACTERS.contains(cc));
             } else {
                 // the character c has offset i in safecharacters
-                assert!(safecharacters[i as usize] == c as u8)
+                assert!(SAFE_CHARACTERS[i as usize] == c as u8)
             }
         }
     }
