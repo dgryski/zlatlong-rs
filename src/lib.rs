@@ -65,12 +65,13 @@ pub fn compress(points: &[Point]) -> Vec<u8> {
     result
 }
 
-#[derive(Debug, Clone)]
-pub struct InvalidCharError {
-    c: char,
+#[derive(Debug)]
+pub enum DecompressError {
+    InvalidCharError(char),
+    TruncatedError,
 }
 
-pub fn decompress(value: &[u8]) -> Result<Vec<Point>, InvalidCharError> {
+pub fn decompress(value: &[u8]) -> Result<Vec<Point>, DecompressError> {
     // From https://docs.microsoft.com/en-us/bingmaps/spatial-data-services/geodata-api
 
     let mut points = Vec::<Point>::new();
@@ -85,14 +86,12 @@ pub fn decompress(value: &[u8]) -> Result<Vec<Point>, InvalidCharError> {
 
         loop {
             if index >= value.len() {
-                return Ok(points);
+                return Err(DecompressError::TruncatedError);
             }
 
             let b = SAFE_INDEX[value[index] as usize] as i64;
             if b == 255 {
-                return Err(InvalidCharError {
-                    c: value[index] as char,
-                });
+                return Err(DecompressError::InvalidCharError(value[index] as char));
             }
             index += 1;
 
